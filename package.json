@@ -1,0 +1,23 @@
+{
+  "name": "voice-enabling-text-bot-sample-app-vapi-asr",
+  "version": "1.0.0",
+  "description": "## Content to be filled",
+  "main": "voice-on-text-bot-app-with-simple-bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vonage/server-sdk": "^2.11.1",
+    "body-parser": "^1.19.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "express-ws": "^5.0.2",
+    "request": "^2.88.2",
+    "stream": "^0.0.2"
+  },
+  "engines": {
+    "node": "16.15"
+  }
+}
