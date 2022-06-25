@@ -2,7 +2,7 @@
 
 This application allows placing or receiving voice calls to/from a phone and interact with a text-only chatbot via voice, thus voice enabling a text-only chatbot.
 
-This application uses Vonage Voice API for speech recognition and text to speech capabalities to listen to caller's requests and play chatbot replies.
+This application uses Vonage Voice API for speech recognition and text to speech capabilities to listen to caller's requests and play chatbot replies.
 
 ## About this application
 
