@@ -2,7 +2,7 @@
 
 This application allows placing or receiving voice calls to/from a phone and interact with a text-only chatbot via voice, thus voice enabling a text-only chatbot.
 
-This application uses Vonage Voice API for speech recognition and text to speech capabalities to listen to user's requests and play chatbot replies.
+This application uses Vonage Voice API for speech recognition and text to speech capabalities to listen to caller's requests and play chatbot replies.
 
 ## About this application
 
@@ -10,7 +10,7 @@ This application makes use of Vonage Voice API to answer incoming or place voice
 - Uses Vonage Voice API to do ASR (Automatic Speech Recognition) on caller's speech and get the transcript,</br>
 - Sends the transcript to a very simple text chatbot for demo purpose. In this case, the very simple text chatbot is coded in the associated code repository listed below,</br>
 - Receives the corresponding text answer from the simple chatbot,</br>
-- Generates voice reply to user using Vonage Voice API TTS (Text-to-Speech).</br>
+- Generates voice reply to caller using Vonage Voice API TTS (Text-to-Speech).</br>
 
 Once this application is running, you call in to the **`phone number linked`** to your application (as explained below) to interact via voice with your chatbot.</br>
 
@@ -63,7 +63,7 @@ Instructions to set up ngrok:
 		*Web Interface                 http://127.0.0.1:4040                                     
 		Forwarding                   https://xxxxxxx.ngrok.io -> http://localhost:6000                             
 		Forwarding                    https://yyyyyyy.ngrok.io -> http://localhost:8000*</br> 
-	- Make note of *xxxxxxx.ngrok.io* (without the leading https://), the one associated to local port 6000, as it will be set as **`BOT_SRV`** in the next steps below,</br>
+	- Make note of *xxxxxxx.ngrok.io* (without the leading https://), the one associated to local port 6000, as it will be set as **`BOT_SERVER`** in the next steps below,</br>
 	- Make note of *https://yyyyyyy.ngrok.io* (with the leading https://), the one associated to local port 8000, as it will be needed in the next steps below.</br>	
 
 
@@ -77,7 +77,7 @@ e.g.</br>
 	*`mysimplebotname.herokuapp.com`, `myserver1.mycompany.com:32000`</br>
 	`myappname.herokuapp.com`, `myserver2.mycompany.com:40000`*</br>
 
-  (the former will be set as **`BOT_SRV`** in the following steps, no `port` is necessary with heroku as public hostname)
+  (the former will be set as **`BOT_SERVER`** in the following steps, no `port` is necessary with heroku as public hostname)
 
 For Heroku deployment, see more details in the next section **Command Line Heroku deployment**.  
 
@@ -123,7 +123,7 @@ or
 
 ## Overview on how this sample Voice API application works
 
-- This application may receive incoming calls to the **`phone number linked`**, or you may initiate outgoings call with the URL \<this-server\>/makecall (insert the number to call in _callInfo_ field).
+- This application may receive incoming calls to the **`phone number linked`**, or you may initiate outgoings call by opening in a web browser the URL \<this-server-hostname\>/makecall (update the number to call in _callInfo_ object in the source file voice-on-text-bot-app-\*.js).
 
 - You may customize the inital text sent to your chatbot to correspond to your chatbot programming and use case.
 
