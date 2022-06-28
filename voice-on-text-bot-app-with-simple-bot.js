@@ -52,6 +52,8 @@ const vonage = new Vonage({
   apiSecret: process.env.API_SECRET,
   applicationId: process.env.APP_ID,
   privateKey: './.private.key'
+}, {
+  apiHost: 'api-us-1.nexmo.com'
 });
 
 //-------------
@@ -83,20 +85,20 @@ const startTimeout = 10;  // adjust as needed for your user's voice interaction 
 // In this example, uncomment the set of paramaters below for the language you would like to try, and comment the other set of parameters below
 
 // For French samples
-const languageCode = process.env.LANGUAGE_CODE || 'fr-FR';
-const language = process.env.LANGUAGE || 'fr';
-const ttsStyle = process.env.TTS_STYLE || 6; // see https://developer.nexmo.com/voice/voice-api/guides/text-to-speech
-const greetingText = process.env.GREETING_TEXT || "Bonjour";
-const wakeUpBotText = process.env.WAKE_UP_BOT_TEXT || "Bonjour";
-const defaultBotGreetingText = process.env.DEFAULT_BOT_GREETING_TEXT || "Comment puis-je vous aider ?";
+// const languageCode = process.env.LANGUAGE_CODE || 'fr-FR';
+// const language = process.env.LANGUAGE || 'fr';
+// const ttsStyle = process.env.TTS_STYLE || 6; // see https://developer.nexmo.com/voice/voice-api/guides/text-to-speech
+// const greetingText = process.env.GREETING_TEXT || "Bonjour";
+// const wakeUpBotText = process.env.WAKE_UP_BOT_TEXT || "Bonjour";
+// const defaultBotGreetingText = process.env.DEFAULT_BOT_GREETING_TEXT || "Comment puis-je vous aider ?";
 
 // For English samples
-// const languageCode = process.env.LANGUAGE_CODE || 'en-US';
-// const language = process.env.LANGUAGE || 'en';
-// const ttsStyle = process.env.TTS_STYLE || 11; // see https://developer.nexmo.com/voice/voice-api/guides/text-to-speech
-// const greetingText = process.env.GREETING_TEXT || "Hello";
-// const wakeUpBotText = process.env.WAKE_UP_BOT_TEXT || "Hello";
-// const defaultBotGreetingText = process.env.DEFAULT_BOT_GREETING_TEXT || "How may I help you?";
+const languageCode = process.env.LANGUAGE_CODE || 'en-US';
+const language = process.env.LANGUAGE || 'en';
+const ttsStyle = process.env.TTS_STYLE || 11; // see https://developer.nexmo.com/voice/voice-api/guides/text-to-speech
+const greetingText = process.env.GREETING_TEXT || "Hello";
+const wakeUpBotText = process.env.WAKE_UP_BOT_TEXT || "Hello";
+const defaultBotGreetingText = process.env.DEFAULT_BOT_GREETING_TEXT || "How may I help you?";
 
 //-----------
 
@@ -196,11 +198,12 @@ app.post('/placecall', (req, res) => {
 
 app.get('/answer', (req, res) => {
 
-    const hostName = `${req.hostname}`;
+    // const hostName = `${req.hostname}`;
 
     const uuid = req.query.uuid;
 
     app.set('botResponse_' + uuid, defaultBotGreetingText);  // in case text bot is unresponsive
+    app.set('firstTransferDone_' + uuid, 'no'); // has call been connected to conversation?
     
     let nccoResponse = [
         {
@@ -209,24 +212,6 @@ app.get('/answer', (req, res) => {
           "startOnEnter": true
         }
       ];
-
-    // get welcome greeting from text bot
-
-    const userRequest = {
-      'id': uuid,  // to match corresponding call, metadata must be returned in reply from text bot
-      'textRequest': wakeUpBotText,
-      'language': language,
-      'webhookUrl': 'https://' + hostName + '/botreply'
-    };
-
-    const reqOptions = {
-      url: botUrl,
-      method: 'POST',
-      headers: reqHeaders,
-      body: JSON.stringify(userRequest)
-    };
-
-    webHookRequest(reqOptions, reqCallback);
 
     res.status(200).json(nccoResponse);
 
@@ -239,9 +224,39 @@ app.post('/event', (req, res) => {
 
   res.status(200).json({});
 
-  if (req.body.status == "completed") {
+  const hostName = `${req.hostname}`;
 
-    app.set('botResponse_' + req.body.uuid, undefined);
+  const uuid = req.body.uuid;
+
+  if (req.body.type === 'transfer') {
+    if (app.get('firstTransferDone_' + uuid) === 'no') {
+      app.set('firstTransferDone_' + uuid, 'yes');  // call has been connected to conversation (first transfer event)
+
+      // get welcome greeting from text bot
+
+      const userRequest = {
+        'id': uuid,  // to match corresponding call, metadata must be returned in reply from text bot
+        'textRequest': wakeUpBotText,
+        'language': language,
+        'webhookUrl': 'https://' + hostName + '/botreply'
+      };
+
+      const reqOptions = {
+        url: botUrl,
+        method: 'POST',
+        headers: reqHeaders,
+        body: JSON.stringify(userRequest)
+      };
+
+      webHookRequest(reqOptions, reqCallback);
+
+    }
+  }
+
+  if (req.body.status === "completed") {
+
+    app.set('botResponse_' + uuid, undefined);
+    app.set('firstTransferDone_' + uuid, undefined);
 
   }
 
@@ -266,7 +281,6 @@ app.post('/asr', (req, res) => {
         console.log('>>> ASR timeout reason:', req.body.speech.timeout_reason);
       }  
 
-      // TO DO: need to set a default response in case bot never replies or with too much delay
       const ttsText = app.get('botResponse_' + uuid);
 
       console.log(">>> New ASR, text:", ttsText, "on call:", uuid);
@@ -299,20 +313,20 @@ app.post('/asr', (req, res) => {
   } else {
 
 
-  if (req.body.speech.hasOwnProperty('timeout_reason')) {
-    console.log('>>> ASR timeout reason:', req.body.speech.timeout_reason);
-  }      
+    if (req.body.speech.hasOwnProperty('timeout_reason')) {
+      console.log('>>> ASR timeout reason:', req.body.speech.timeout_reason);
+    }      
 
-  if (req.body.speech.hasOwnProperty('error')) {
-    console.log('>>> ASR error:', req.body.speech.error);
-  }  
+    if (req.body.speech.hasOwnProperty('error')) {
+      console.log('>>> ASR error:', req.body.speech.error);
+    }  
 
-  const ttsText = app.get('botResponse_' + uuid);
+    const ttsText = app.get('botResponse_' + uuid);
 
-  console.log(">>> New ASR, text:", ttsText, "on call:", uuid);
-  doNewAsr(uuid, ttsText, hostName);
+    console.log(">>> New ASR, text:", ttsText, "on call:", uuid);
+    doNewAsr(uuid, ttsText, hostName);
 
-  };  
+  };
 
 });
 
@@ -379,7 +393,7 @@ function doNewAsr(vapiCallUuid, ttsText, host) {
       }
     }, (err, res) => {
        if (err) { console.error('Transfer', vapiCallUuid, 'error: ', err, err.body.invalid_parameters); }
-       // else { console.log('Transfer', vapiCallUuid, 'status: ', res);}
+       else { console.log('Transfer', vapiCallUuid, 'status: ', res);}
   });
 
 }
