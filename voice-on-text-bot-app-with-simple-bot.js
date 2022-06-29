@@ -52,8 +52,6 @@ const vonage = new Vonage({
   apiSecret: process.env.API_SECRET,
   applicationId: process.env.APP_ID,
   privateKey: './.private.key'
-}, {
-  apiHost: 'api-us-1.nexmo.com'
 });
 
 //-------------
@@ -393,7 +391,7 @@ function doNewAsr(vapiCallUuid, ttsText, host) {
       }
     }, (err, res) => {
        if (err) { console.error('Transfer', vapiCallUuid, 'error: ', err, err.body.invalid_parameters); }
-       else { console.log('Transfer', vapiCallUuid, 'status: ', res);}
+       // else { console.log('Transfer', vapiCallUuid, 'status: ', res);}
   });
 
 }

@@ -56,13 +56,6 @@ const vonage = new Vonage({
 
 //-------------
 
-// Server hosting the very simple Bot to simulate interaction with a real Text Bot
-const botServer = process.env.BOT_SERVER;
-// this application will make HTTP POST requests to the URL https://<botServer>/bot
-const botUrl = "https://" + botServer + "/bot";
-
-//-------------
-
 // Voice API ASR parameters
 // See https://developer.nexmo.com/voice/voice-api/ncco-reference#speech-recognition-settings
 
@@ -211,15 +204,6 @@ app.get('/answer', (req, res) => {
         }
       ];
 
-
-    // INSERT YOUR CODE HERE    
-    // get welcome greeting from text chat bot
-
-    // then in this sample code framework
-    // your chatbot will call back the webhook path '/botreply' (below)
-    // to supply the text reply and metadata to link with original
-    // request, for example return the uuid value
-
     res.status(200).json(nccoResponse);
 
 });
@@ -231,9 +215,28 @@ app.post('/event', (req, res) => {
 
   res.status(200).json({});
 
-  if (req.body.status == "completed") {
+  const hostName = `${req.hostname}`;
 
-    app.set('botResponse_' + req.body.uuid, undefined);
+  const uuid = req.body.uuid;
+
+  if (req.body.type === 'transfer') {
+    if (app.get('firstTransferDone_' + uuid) === 'no') {
+      app.set('firstTransferDone_' + uuid, 'yes');  // call has been connected to conversation (first transfer event)
+
+      // INSERT YOUR CODE HERE    
+      // get welcome greeting from your text chatbot
+
+      // then in this sample code framework
+      // your chatbot will call back the webhook path '/botreply' (below)
+      // to supply the text reply and metadata to link with original
+      // request, for example return the uuid value
+    }
+  }
+
+  if (req.body.status === "completed") {
+
+    app.set('botResponse_' + uuid, undefined);
+    app.set('firstTransferDone_' + uuid, undefined);
 
   }
 
@@ -272,6 +275,9 @@ app.post('/asr', (req, res) => {
       // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // ENTER YOUR CODE HERE
       // TO SEND TEXT REQUEST TO CHATBOT
+      // your chatbot will call back the webhook path '/botreply' (below)
+      // to supply the text reply and metadata to link with original
+      // request, for example return the uuid value
       // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     }  
@@ -310,9 +316,11 @@ app.post('/botreply', (req, res) => {
   // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // ENTER YOUR CODE HERE
   // TO RECEIVE TEXT RESPONSE FROM CHATBOT
+  // assign chatbotbot response to botTextReponse parameter, i.e.
+  // const botTextReponse = <chatbot response>;
   // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  console.log('>>>', botTextReponse);
+  console.log('>>> my chatbot response:', botTextReponse);
 
   app.set('botResponse_' + callUuid, botTextReponse);
 
