@@ -80,7 +80,7 @@ const startTimeout = 10;  // adjust as needed for your user's voice interaction 
 
 // We use both ASR and TTS capabilities of Vonage Voice API for this application
 
-// In this example, uncomment the set of paramaters below for the language you would like to try, and comment the other set of parameters below
+// In this example, uncomment the set of paramaters below for the language you would like to try, and comment the other set of parameters
 
 // For French samples
 // const languageCode = process.env.LANGUAGE_CODE || 'fr-FR';
@@ -122,9 +122,7 @@ app.get('/makecall', (req, res) => {
 
   callInfo = {
     'type': 'phone',
-    'number': '12995550101',  // replace with the actual phone number to call for tests
-    'x_param_1': 'foo1',
-    'x_param_2': 'foo2'
+    'number': '12995550101'  // replace with the actual phone number to call for tests
   };
 
   console.log("callInfo:", JSON.stringify(callInfo));
@@ -137,7 +135,7 @@ app.get('/makecall', (req, res) => {
   };
 
   console.log("webHookRequest 1");
-  console.log("userRequest:", userRequest);
+
   webHookRequest(reqOptions, reqCallback);
 
 });
@@ -151,22 +149,6 @@ app.post('/placecall', (req, res) => {
   const hostName = `${req.hostname}`;
   const numberToCall = req.body.number;
 
-  let xCustomFields = [];
-  let customQueryParams = '';
-
-  for (const [key, value] of Object.entries(req.body)) {
-    console.log(`${key}: ${value}`);
-    if (`${key}`.substring(0, 2) == 'x_') {
-      xCustomFields.push(`${key}=${value}`);
-    }
-  }
-
-  if (xCustomFields.length != 0) {
-    customQueryParams = "&" + xCustomFields.join("&");
-  };
-
-  console.log('>>> custom query parameters in placecall:', customQueryParams);
-
   vonage.calls.create({
     to: [{
       type: 'phone',
@@ -176,9 +158,9 @@ app.post('/placecall', (req, res) => {
      type: 'phone',
      number: servicePhoneNumber
     },
-    answer_url: ['https://' + hostName + '/answer?language_code=' + languageCode + customQueryParams],
+    answer_url: ['https://' + hostName + '/answer'],
     answer_method: 'GET',
-    event_url: ['https://' + hostName + '/event?language_code=' + languageCode + customQueryParams],
+    event_url: ['https://' + hostName + '/event'],
     event_method: 'POST'
     }, (err, res) => {
     if(err) {
@@ -195,8 +177,6 @@ app.post('/placecall', (req, res) => {
 //-------
 
 app.get('/answer', (req, res) => {
-
-    // const hostName = `${req.hostname}`;
 
     const uuid = req.query.uuid;
 
