@@ -165,8 +165,7 @@ app.post('/placecall', (req, res) => {
     }, (err, res) => {
     if(err) {
       console.error(">>> outgoing call error:", err);
-      console.error(err.body.title);
-      console.error(err.body.invalid_parameters);
+      console.error(err.body);
     } else {
       console.log(">>> outgoing call status:", res);
     }
@@ -179,64 +178,40 @@ app.post('/placecall', (req, res) => {
 app.get('/answer', (req, res) => {
 
     const uuid = req.query.uuid;
-
-    app.set('botResponse_' + uuid, defaultBotGreetingText);  // in case text bot is unresponsive
-    app.set('firstTransferDone_' + uuid, 'no'); // has call been connected to conversation?
+    const hostName = `${req.hostname}`;
     
     let nccoResponse = [
         {
-          "action": "conversation",
-          "name": "conference_" + uuid,
-          "startOnEnter": true
+        "action": "talk",
+        "language": languageCode,
+        "text": greetingText,
+        "style": ttsStyle,
+        "bargeIn": true
+        },
+        {
+          "action": "input",  // see https://developer.nexmo.com/voice/voice-api/ncco-reference#speech-recognition-settings
+          "eventUrl": ["https://" + hostName + "/asr"],
+          "eventMethod": "POST",
+          "type": ["speech"],  
+          "speech":
+            {
+            "uuid": [uuid], 
+            "endOnSilence": endOnSilence, 
+            "language": languageCode,
+            "startTimeout": startTimeout
+            } 
         }
-      ];
+    ];  
 
     res.status(200).json(nccoResponse);
 
 });
 
-
 //-------
 
 app.post('/event', (req, res) => {
 
-  res.status(200).json({});
-
-  const hostName = `${req.hostname}`;
-
-  const uuid = req.body.uuid;
-
-  if (req.body.type === 'transfer') {
-    if (app.get('firstTransferDone_' + uuid) === 'no') {
-      app.set('firstTransferDone_' + uuid, 'yes');  // call has been connected to conversation (first transfer event)
-
-      // get welcome greeting from text bot
-
-      const userRequest = {
-        'id': uuid,  // to match corresponding call, metadata must be returned in reply from text bot
-        'textRequest': wakeUpBotText,
-        'language': language,
-        'webhookUrl': 'https://' + hostName + '/botreply'
-      };
-
-      const reqOptions = {
-        url: botUrl,
-        method: 'POST',
-        headers: reqHeaders,
-        body: JSON.stringify(userRequest)
-      };
-
-      webHookRequest(reqOptions, reqCallback);
-
-    }
-  }
-
-  if (req.body.status === "completed") {
-
-    app.set('botResponse_' + uuid, undefined);
-    app.set('firstTransferDone_' + uuid, undefined);
-
-  }
+  res.status(200).send('Ok');
 
 });
 
@@ -244,10 +219,29 @@ app.post('/event', (req, res) => {
 
 app.post('/asr', (req, res) => {
 
-  res.status(200).send('Ok');
+  const hostName = `${req.hostname}`;
 
   const uuid = req.body.uuid;
-  const hostName = `${req.hostname}`;
+
+  const nccoResponse = [
+    {
+    "action": "input",  // see https://developer.nexmo.com/voice/voice-api/ncco-reference#speech-recognition-settings
+    "eventUrl": ["https://" + hostName + "/asr"],
+    "eventMethod": "POST",
+    "type": ["speech"],  
+    "speech":
+      {
+      "uuid": [uuid], 
+      "endOnSilence": endOnSilence, 
+      "language": languageCode,
+      "startTimeout": startTimeout
+      } 
+    }
+  ];
+
+  res.json(nccoResponse);
+
+  //----
 
   if (req.body.speech.hasOwnProperty('results')) {
 
@@ -258,11 +252,6 @@ app.post('/asr', (req, res) => {
       if (req.body.speech.hasOwnProperty('timeout_reason')) {
         console.log('>>> ASR timeout reason:', req.body.speech.timeout_reason);
       }  
-
-      const ttsText = app.get('botResponse_' + uuid);
-
-      console.log(">>> New ASR, text:", ttsText, "on call:", uuid);
-      doNewAsr(uuid, ttsText, hostName);
 
     } else {
 
@@ -287,9 +276,7 @@ app.post('/asr', (req, res) => {
       webHookRequest(reqOptions, reqCallback);
     }  
 
-
   } else {
-
 
     if (req.body.speech.hasOwnProperty('timeout_reason')) {
       console.log('>>> ASR timeout reason:', req.body.speech.timeout_reason);
@@ -298,11 +285,6 @@ app.post('/asr', (req, res) => {
     if (req.body.speech.hasOwnProperty('error')) {
       console.log('>>> ASR error:', req.body.speech.error);
     }  
-
-    const ttsText = app.get('botResponse_' + uuid);
-
-    console.log(">>> New ASR, text:", ttsText, "on call:", uuid);
-    doNewAsr(uuid, ttsText, hostName);
 
   };
 
@@ -322,59 +304,22 @@ app.post('/botreply', (req, res) => {
 
   const botTextReponse = req.body.botTextReponse;
 
-  console.log('>>>', botTextReponse);
+  console.log('>>> bot response:', botTextReponse);
 
-  app.set('botResponse_' + callUuid, botTextReponse);
-
-  doNewAsr(callUuid, botTextReponse, hostName);
+  vonage.calls.talk.start(callUuid,  // play TTS of chatbot response
+    {
+    text: botTextReponse,
+    language: languageCode, 
+    style: ttsStyle
+    }, (err, res) => {
+       if (err) { console.error('Talk ', callUuid, 'error: ', err, err.body); }
+       else {
+         console.log('Talk ', callUuid, 'status: ', res);
+    }
+  });
 
 });
 
-//----------------------------------------
-
-function doNewAsr(vapiCallUuid, ttsText, host) {
-
-  vonage.calls.update(vapiCallUuid, {
-    "action": "transfer",
-    "destination":
-      {
-      "type": "ncco",
-      "ncco":
-        [
-          {
-          "action": "talk",
-          "language": languageCode,
-          "text": ttsText,
-          "style": ttsStyle,
-          "bargeIn": true
-          }
-          ,
-          {
-          "action": "input",  // see https://developer.nexmo.com/voice/voice-api/ncco-reference#speech-recognition-settings
-          "eventUrl": ["https://" + host + "/asr"],
-          "eventMethod": "POST",
-          "type": ["speech"],  
-          "speech":
-            {
-            "uuid": [vapiCallUuid], 
-            "endOnSilence": endOnSilence, 
-            "language": languageCode,
-            "startTimeout": startTimeout
-            } 
-          }
-          ,
-          {
-          "action": "conversation",
-          "name": "conference_" + vapiCallUuid
-          }   
-        ]
-      }
-    }, (err, res) => {
-       if (err) { console.error('Transfer', vapiCallUuid, 'error: ', err, err.body.invalid_parameters); }
-       // else { console.log('Transfer', vapiCallUuid, 'status: ', res);}
-  });
-
-}
 
 //=========================================
 
