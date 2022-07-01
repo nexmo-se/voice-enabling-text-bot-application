@@ -87,16 +87,12 @@ const startTimeout = 10;  // adjust as needed for your user's voice interaction 
 // const language = process.env.LANGUAGE || 'fr';
 // const ttsStyle = process.env.TTS_STYLE || 6; // see https://developer.nexmo.com/voice/voice-api/guides/text-to-speech
 // const greetingText = process.env.GREETING_TEXT || "Bonjour";
-// const wakeUpBotText = process.env.WAKE_UP_BOT_TEXT || "Bonjour";
-// const defaultBotGreetingText = process.env.DEFAULT_BOT_GREETING_TEXT || "Comment puis-je vous aider ?";
 
 // For English samples
 const languageCode = process.env.LANGUAGE_CODE || 'en-US';
 const language = process.env.LANGUAGE || 'en';
 const ttsStyle = process.env.TTS_STYLE || 11; // see https://developer.nexmo.com/voice/voice-api/guides/text-to-speech
 const greetingText = process.env.GREETING_TEXT || "Hello";
-const wakeUpBotText = process.env.WAKE_UP_BOT_TEXT || "Hello";
-const defaultBotGreetingText = process.env.DEFAULT_BOT_GREETING_TEXT || "How may I help you?";
 
 //-----------
 
@@ -182,11 +178,11 @@ app.get('/answer', (req, res) => {
     
     let nccoResponse = [
         {
-        "action": "talk",
-        "language": languageCode,
-        "text": greetingText,
-        "style": ttsStyle,
-        "bargeIn": true
+          "action": "talk",
+          "language": languageCode,
+          "text": greetingText,
+          "style": ttsStyle,
+          "bargeIn": true
         },
         {
           "action": "input",  // see https://developer.nexmo.com/voice/voice-api/ncco-reference#speech-recognition-settings
