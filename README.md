@@ -130,9 +130,10 @@ or
 
 ## Overview on how this sample Voice API application works
 
-- This application may receive incoming calls to the **`phone number linked`**, or you may initiate outgoings call by opening in a web browser the URL \<this-server-hostname\>/makecall (update the number to call in _callInfo_ object in the source file voice-on-text-bot-app-\*.js).
+- This application may receive incoming calls to the **`phone number linked`**,</br>
+or you may initiate outgoing calls by opening in a web browser with the URL `https://<this-server-hostname>/makecall` (update the value of the environment variable CALLEE_NUMBER).</br>
 
-- You may customize the inital text sent to your chatbot to correspond to your chatbot programming and use case.
+- You may customize the inital text sent to your chatbot to correspond to your chatbot programming and use case.</br>
 
 - Chatbot responses will be received by this application.</br>
 
@@ -143,23 +144,23 @@ You may select one of the following 2 types of deployments.
 
 ### Local deployment
 
-To run your own instance of this sample application locally, you'll need Node.js installed. We tested with version 18.19.1.
+To run your own instance of this sample application locally, you'll need Node.js installed. We tested with version 18.19.1.</br>
 
-Download this sample application code to a local folder, then go to that folder.
+Download this sample application code to a local folder, then go to that folder.</br>
 
-Copy the `env.example` file over to a new file called `.env` (with leading dot):
+Copy the `env.example` file over to a new file called `.env` (with leading dot):</br>
 ```bash
 cp env.example .env
 ```
 
 Edit `.env` file, and set the seven parameter values:</br>
-API_KEY=</br>
-API_SECRET=</br>
-APP_ID=</br>
-API_REGION=</br>
-SERVICE_PHONE_NUMBER=</br>
-BOT_SERVER=</br>
-CALLEE_NUMBER=</br>
+API_KEY= </br>
+API_SECRET= </br>
+APP_ID= </br>
+API_REGION= </br>
+SERVICE_PHONE_NUMBER= </br>
+BOT_SERVER= </br>
+CALLEE_NUMBER= </br>
 
 Install dependencies once:
 ```bash
