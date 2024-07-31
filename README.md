@@ -7,12 +7,19 @@ This application uses Vonage Voice API for speech recognition and text to speech
 ## About this application
 
 This application makes use of Vonage Voice API to answer incoming or place voice calls, it:</br>
-- Uses Vonage Voice API to do ASR (Automatic Speech Recognition) on caller's speech and get the transcript,</br>
+- Uses Vonage Voice API to do ASR (Automatic Speech Recognition) on user's speech and get the transcript,</br>
 - Sends the transcript to a very simple text chatbot for demo purpose. In this case, the very simple text chatbot is coded in the associated code repository listed below,</br>
 - Receives the corresponding text answer from the simple chatbot,</br>
-- Generates voice reply to caller using Vonage Voice API TTS (Text-to-Speech).</br>
+- Generates voice reply to caller using Vonage Voice API TTS (Text-to-Speech),</br>
+- It does support barge in, meaning it stops the current TTS when the user resumes speaking.</br>
 
 Once this application is running, you call in to the **`phone number linked`** to your application (as explained below) to interact via voice with your chatbot.</br>
+
+You may also initiate an outbound call from the platform by opening a web browser to the address</br>
+*`https://<server>/makecall`*</br>
+`<server>` being the public host name of this server,</br>
+the called number is set in the environment variable CALLEE_NUMBER (see next sections).</br>
+
 
 ## Set up the simple chatbot - Host server public hostname and port
 
@@ -136,7 +143,7 @@ You may select one of the following 2 types of deployments.
 
 ### Local deployment
 
-To run your own instance of this sample application locally, you'll need an up-to-date version of Node.js (we tested with version 16.15.1).
+To run your own instance of this sample application locally, you'll need Node.js installed. We tested with version 18.19.1.
 
 Download this sample application code to a local folder, then go to that folder.
 
@@ -145,13 +152,14 @@ Copy the `env.example` file over to a new file called `.env` (with leading dot):
 cp env.example .env
 ```
 
-Edit `.env` file, and set the five parameter values:</br>
+Edit `.env` file, and set the seven parameter values:</br>
 API_KEY=</br>
 API_SECRET=</br>
 APP_ID=</br>
+API_REGION=</br>
+SERVICE_PHONE_NUMBER=</br>
 BOT_SERVER=</br>
-SERVICE_NUMBER=</br>
-
+CALLEE_NUMBER=</br>
 
 Install dependencies once:
 ```bash
@@ -190,12 +198,15 @@ heroku create myappname
 
 On your Heroku dashboard where your application page is shown, click on `Settings` button,
 add the following `Config Vars` and set them with their respective values:</br>
+
 API_KEY</br>
 API_SECRET</br>
 APP_ID</br>
+API_REGION</br>
+SERVICE_PHONE_NUMBER</br>
 BOT_SERVER</br>
-SERVICE_NUMBER</br>
-PRIVATE_KEY_FILE with the value **./.private.key**</br>
+CALLEE_NUMBER</br>
+
 
 Now, deploy the application:
 

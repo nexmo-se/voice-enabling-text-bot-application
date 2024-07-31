@@ -7,19 +7,18 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser')
 const app = express();
-const expressWs = require('express-ws')(app);
-const Vonage = require('@vonage/server-sdk');
-const { Readable } = require('stream');
+// const Vonage = require('@vonage/server-sdk');
 
 // ------------------
 
 // HTTP client
-const webHookRequest = require('request');
+// const webHookRequest = require('request');
+const axios = require('axios');
 
-const reqHeaders = {
-  'Content-Type': 'application/json',
-  'Accept': 'application/json'
-};
+// const reqHeaders = {
+//   'Content-Type': 'application/json',
+//   'Accept': 'application/json'
+// };
 
  //---- CORS policy - Update this section as needed ----
 
@@ -37,9 +36,9 @@ app.use(bodyParser.json());
 
 //-------
 
-let router = express.Router();
-router.get('/', express.static('app'));
-app.use('/app',router);
+// let router = express.Router();
+// router.get('/', express.static('app'));
+// app.use('/app',router);
 
 //------
 
@@ -47,12 +46,33 @@ const servicePhoneNumber = process.env.SERVICE_PHONE_NUMBER;
 
 //-------------
 
-const vonage = new Vonage({
+// const vonage = new Vonage({
+//   apiKey: process.env.API_KEY,
+//   apiSecret: process.env.API_SECRET,
+//   applicationId: process.env.APP_ID,
+//   privateKey: './.private.key'
+// });
+
+//--- Vonage API ---
+
+const { Auth } = require('@vonage/auth');
+
+const credentials = new Auth({
   apiKey: process.env.API_KEY,
   apiSecret: process.env.API_SECRET,
   applicationId: process.env.APP_ID,
-  privateKey: './.private.key'
+  privateKey: './.private.key'    // private key file name with a leading dot 
 });
+
+const apiBaseUrl = "https://" + process.env.API_REGION;
+
+const options = {
+  apiHost: apiBaseUrl
+};
+
+const { Vonage } = require('@vonage/server-sdk');
+
+const vonage = new Vonage(credentials, options);
 
 //-------------
 
@@ -60,6 +80,11 @@ const vonage = new Vonage({
 const botServer = process.env.BOT_SERVER;
 // this application will make HTTP POST requests to the URL https://<botServer>/bot
 const botUrl = "https://" + botServer + "/bot";
+
+//-------------
+
+//-- For testing with outbound calls from the platform --
+const calleeNumber = process.env.CALLEE_NUMBER;
 
 //-------------
 
@@ -100,39 +125,27 @@ console.log("Service phone number:", servicePhoneNumber);
 
 //==========================================================
 
-function reqCallback(error, response, body) {
-    if (body != "Ok") {  
-      console.log("HTTP request call status:", body);
-    };  
-}
- 
-//--- just testing making calls from a local request
-app.get('/makecall', (req, res) => {
+//--- just testing making outbound an call from a local request ---
+//-- https://<this-server>/makecall --
+
+app.get('/makecall', async (req, res) => {
 
   res.status(200).send('Ok');
 
-  const hostName = `${req.hostname}`;
+  const response = await axios.post('https://' + req.hostname + '/placecall', 
+    {
+      'type': 'phone',
+      'number': calleeNumber  // replace with the actual phone number to call for tests
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    }
+  );
 
-  let callInfo;
-  let reqOptions;
-
-  callInfo = {
-    'type': 'phone',
-    'number': '12995550101'  // replace with the actual phone number to call for tests
-  };
-
-  console.log("callInfo:", JSON.stringify(callInfo));
-
-  reqOptions = {
-    url: 'https://' + hostName + '/placecall',
-    method: 'POST',
-    headers: reqHeaders,
-    body: JSON.stringify(callInfo)
-  };
-
-  console.log("webHookRequest 1");
-
-  webHookRequest(reqOptions, reqCallback);
+  // console.log('Place call request:', response.status);
 
 });
 
@@ -142,13 +155,12 @@ app.post('/placecall', (req, res) => {
 
   res.status(200).send('Ok');
 
-  const hostName = `${req.hostname}`;
-  const numberToCall = req.body.number;
+  const hostName = req.hostname;
 
-  vonage.calls.create({
+  vonage.voice.createOutboundCall({
     to: [{
       type: 'phone',
-      number: numberToCall
+      number: req.body.number
     }],
     from: {
      type: 'phone',
@@ -158,20 +170,19 @@ app.post('/placecall', (req, res) => {
     answer_method: 'GET',
     event_url: ['https://' + hostName + '/event'],
     event_method: 'POST'
-    }, (err, res) => {
-    if(err) {
-      console.error(">>> outgoing call error:", err);
-      console.error(err.body);
-    } else {
-      console.log(">>> outgoing call status:", res);
-    }
-  });
+    })
+    .then(res => {
+      console.log(">>> Outgoing PSTN call status:", res);
+    })
+    .catch(err => console.error(">>> Outgoing PSTN call error:", err))
 
 });
 
 //-------
 
 app.get('/answer', (req, res) => {
+
+    console.log('>>> in answer webhook!');
 
     const uuid = req.query.uuid;
     const hostName = `${req.hostname}`;
@@ -181,8 +192,7 @@ app.get('/answer', (req, res) => {
           "action": "talk",
           "language": languageCode,
           "text": greetingText,
-          "style": ttsStyle,
-          "bargeIn": true
+          "style": ttsStyle
         },
         {
           "action": "input",  // see https://developer.nexmo.com/voice/voice-api/ncco-reference#speech-recognition-settings
@@ -207,17 +217,20 @@ app.get('/answer', (req, res) => {
 
 app.post('/event', (req, res) => {
 
+  // console.log('>>> /event', req.body);
+
   res.status(200).send('Ok');
 
 });
 
 //---------
 
-app.post('/asr', (req, res) => {
+app.post('/asr', async (req, res) => {
 
-  const hostName = `${req.hostname}`;
-
+  const hostName = req.hostname;
   const uuid = req.body.uuid;
+
+  //--
 
   const nccoResponse = [
     {
@@ -254,22 +267,50 @@ app.post('/asr', (req, res) => {
       const transcript = req.body.speech.results[0].text;
       console.log(">>> Detected spoken request:", transcript);
 
-      const userRequest = {
-        'id': uuid,  // to match corresponding call, metadata must be returned in reply from text bot
-        'textRequest': transcript,  // user's request
-        'language': language,
-        'webhookUrl': 'https://' + hostName + '/botreply'
-      };
+      //--
 
-      const reqOptions = {
-        url: botUrl,
-        method: 'POST',
-        headers: reqHeaders,
-        body: JSON.stringify(userRequest)
-      };
+      // const userRequest = {
+      //   'id': uuid,  // to match corresponding call, metadata must be returned in reply from text bot
+      //   'textRequest': transcript,  // user's request
+      //   'language': language,
+      //   'webhookUrl': 'https://' + hostName + '/botreply'
+      // };
 
-      // send request to text bot  
-      webHookRequest(reqOptions, reqCallback);
+      // const reqOptions = {
+      //   url: botUrl,
+      //   method: 'POST',
+      //   headers: reqHeaders,
+      //   body: JSON.stringify(userRequest)
+      // };
+
+      // console.log('reqOptions:', reqOptions);
+
+      // // send request to text bot  
+      // webHookRequest(reqOptions, reqCallback);
+
+      //-- 
+
+      if (transcript != "" && transcript != null) {
+
+        const response = await axios.post(botUrl, 
+          {
+            'id': uuid,  // to match corresponding call, metadata must be returned in reply from text bot
+            'textRequest': transcript,  // user's request
+            'language': language,
+            'webhookUrl': 'https://' + hostName + '/botreply'
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        console.log('Bot request return code:', response.status);
+
+      };  
+
     }  
 
   } else {
@@ -283,6 +324,22 @@ app.post('/asr', (req, res) => {
     }  
 
   };
+
+});
+
+//------------
+
+app.post('/rtc', (req, res) => {
+
+  res.status(200).send('Ok');
+
+  if(req.body.type == 'audio:speaking:on') {
+    
+    vonage.voice.stopTTS(req.body.body.channel.id)
+      .then(res => console.log('Play TTS status:', res))
+      .catch(err => null);
+  
+  }
 
 });
 
@@ -302,17 +359,15 @@ app.post('/botreply', (req, res) => {
 
   console.log('>>> bot response:', botTextReponse);
 
-  vonage.calls.talk.start(callUuid,  // play TTS of chatbot response
+  vonage.voice.playTTS(callUuid,  
     {
     text: botTextReponse,
     language: languageCode, 
-    style: ttsStyle
-    }, (err, res) => {
-       if (err) { console.error('Talk ', callUuid, 'error: ', err, err.body); }
-       else {
-         console.log('Talk ', callUuid, 'status: ', res);
-    }
-  });
+    style: ttsStyle,
+    bargeIn: true
+    })
+    .then(res => console.log('Play TTS status:', res))
+    .catch(err => null);
 
 });
 

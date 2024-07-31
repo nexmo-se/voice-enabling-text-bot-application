@@ -1,23 +1,17 @@
 {
-  "name": "voice-enabling-text-bot-sample-app-vapi-asr",
+  "name": "voice-enabling-text-bot-application",
   "version": "1.0.0",
-  "description": "## Content to be filled",
-  "main": "voice-on-text-bot-app-with-simple-bot.js",
+  "description": "This application allows placing or receiving voice calls to/from a phone and interact with a text-only chatbot via voice, thus voice enabling a text-only chatbot.",
+  "main": "voice-on-text-bot-app-generic.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Tony Chan",
+  "license": "Apache-2.0",
   "dependencies": {
-    "@vonage/server-sdk": "^2.11.1",
-    "body-parser": "^1.19.0",
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "express-ws": "^5.0.2",
-    "request": "^2.88.2",
-    "stream": "^0.0.2"
-  },
-  "engines": {
-    "node": "16.15"
+    "@vonage/server-sdk": "^3.16.0",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
   }
 }
