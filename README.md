@@ -110,6 +110,16 @@ or
 or
 *https://myserver2.mycompany.com:40000/event*</br>
 
+
+Enable RTC (In-app voice & messaging)
+- Under Event URL, **select** **_HTTP POST_**, and enter https://\<host\>:\<port\>/rtc (replace \<host\> and \<port\> with the public host name and if necessary public port of the server where this sample application is running), e.g.</br>
+*https://yyyyyyyy.ngrok.io/rtc*</br>
+or
+*https://myappname.herokuapp.com/rtc*</br>
+or
+*https://myserver2.mycompany.com:40000/rtc*</br>
+
+
 - Click on [Generate public and private key] if you did not yet create or want new ones, then save as **.private.key** file (note the leading dot in the file name) in this application folder.</br>
 **IMPORTANT**: Do not forget to click on [Save changes] at the bottom of the screen if you have created a new key set.</br>
 - Link a phone number to this application if none has been linked to the application.
